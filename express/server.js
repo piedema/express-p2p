@@ -1,12 +1,11 @@
 const express = require('express')
 const app = express()
 
-const externalIp = require('external-ip')()
 const needle = require('needle')
 
 module.exports = function(options, db, peers, client){
 
-  let { port, autoRemoveInterval } = options
+  let { host, port, myAddress } = options
 
   let heartbeats = {}
 
@@ -34,6 +33,11 @@ module.exports = function(options, db, peers, client){
     }else{
       return res.status(500).json({ success:false })
     }
+  })
+
+  app.all('*', (req, res) => {
+    console.log('route not (yet) available on server')
+    res.status(500).json({ success:false, message:'Route not (yet) available on server' })
   })
 
   return {

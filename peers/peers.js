@@ -11,10 +11,12 @@ module.exports = function(db){
   return {
 
     add:function(address){
+      db.add(address)
       return peersHolder[address] = new Peer(address)
     },
 
     remove:function(address){
+      db.remove(address)
       return delete peersHolder[address]
     },
 
@@ -22,16 +24,16 @@ module.exports = function(db){
       let response = []
       for(let address in peersHolder){
         if(type === 'array'){
-          if(value && peersHolder[address].getPropsString().includes(value)) response.push(peersHolder[address].getPropsArray())
-          else response.push(peersHolder[address].getPropsArray())
+          if(value && address.includes(value)) response.push(peersHolder[address].getPropsArray())
+          else if(!value) response.push(peersHolder[address].getPropsArray())
         }
         if(type === 'object'){
-          if(value && peersHolder[address].getPropsString().includes(value)) response.push(peersHolder[address].getPropsObject())
-          else response.push(peersHolder[address].getPropsObject())
+          if(value && address.includes(value)) response.push(peersHolder[address].getPropsObject())
+          else if(!value) response.push(peersHolder[address].getPropsObject())
         }
         if(type === 'string'){
-          if(value && peersHolder[address].getPropsString().includes(value)) response.push(peersHolder[address].getPropsString())
-          else response.push(peersHolder[address].getPropsString())
+          if(value && address.includes(value)) response.push(peersHolder[address].getPropsString())
+          else if(!value) response.push(peersHolder[address].getPropsString())
         }
       }
       return response
@@ -41,8 +43,10 @@ module.exports = function(db){
       return peersHolder[address]
     },
 
-    update:function(address = null, host = null, port = null){
-      if(address) peers[address].updateAddress(address)
+    update:function(old_address = null, new_address){
+      if(address){
+        peersHolder[old_address].updateAddress(new_address)
+      }
       return true
     }
   }

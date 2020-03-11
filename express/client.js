@@ -1,60 +1,62 @@
-const externalIp = require('external-ip')()
 const needle = require('needle')
 
-module.exports = function(port, autoRemoveInterval, db, peers){
+module.exports = function(options, db, peers){
 
-  let myAddress
+  let { host, port, autoRemove, myAddress } = options
 
-  externalIp((err, ip) => {
-    if (err) { throw err }
+  db.filter().forEach((address) => {
+    console.log('send get /adopt to', address)
+    console.log(myAddress)
+    newRequest('get', address, '/adopt', { address:myAddress }, function(error, response) {
+      if(error){
+        console.log('removing address due to no /adopt response', address)
+        db.remove(address)
+        console.log(error)
+      }
+      if(response){
+        console.log('i am adopted by', address, 'response', response.body)
+      }
+    })
+  })
 
-    myAddress = ip + ':' + port
-
+  setInterval(() => {
     db.filter().forEach((address) => {
-      console.log('send get /adopt to', address)
-      needle.request('get', address + '/adopt', { address:myAddress }, function(error, response) {
+      console.log('send get /heartbeat to', address)
+      newRequest('get', address, '/heartbeat', { address:myAddress }, function(error, response, body) {
         if(error){
-          console.log('removing address due to no /adopt response', address)
+          console.log('removing address due to no /heartbeat response', address)
           db.remove(address)
           console.log(error)
-        }        
-        if(response){
-          console.log('i am adopted by', address, 'response', response.body)
+        }
+        if(response && response.body.success){
+          console.log('reply to /heartbeat request recieved')
         }
       })
     })
+  }, autoRemove * 0.4)
 
-    setInterval(() => {
-      db.filter().forEach((address) => {
-        console.log('send get /heartbeat to', address)
-        needle.request('get', address + '/heartbeat', { address:myAddress }, function(error, response, body) {
-          if(error){
-            console.log('removing address due to no /heartbeat response', address)
-            db.remove(address)
-            console.log(error)
-          }
-          if(response && response.body.success){
-            console.log('reply to /heartbeat request recieved')
-          }
-        })
-      })
-    }, autoRemoveInterval * 0.4)
-  })
+  function newRequest(type = 'get', address, endpoint, data = {}, cb){
+    needle.request(type, address + endpoint, data, (error, response, body) => {
+      cb(error, response, body)
+    })
+  }
 
   return {
 
-    newRequest:function(type = 'get', address = null, endpoint, data = {}, cb){
-      if(!address){
-        db.filter().forEach((address) => {
-          needle.request(type, address + endpoint, data, (error, response, body) => {
-            cb(error, response, body)
-          })
-        })
-        return
-      }
-      needle.request(type, address + endpoint, data, (error, response, body) => {
-        cb(error, response, body)
-      })
+    get:(address, endpoint, data, cb) => {
+      newRequest('get', address, endpoint, data, cb)
+    },
+
+    post:(address, endpoint, data, cb) => {
+      newRequest('delete', address, endpoint, data, cb)
+    },
+
+    put:(address, endpoint, data, cb) => {
+      newRequest('put', address, endpoint, data, cb)
+    },
+
+    delete:(address, endpoint, data, cb) => {
+      newRequest('delete', address, endpoint, data, cb)
     }
   }
 }
