@@ -3,7 +3,6 @@ const fs = require('fs')
 module.exports = function(list){
 
   function savelistDB(){
-    console.log('saving new list', list)
     fs.writeFileSync('./data/db.json', JSON.stringify(list), (error) => {
       if(error){
         console.log(error)
