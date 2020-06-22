@@ -1,70 +1,67 @@
-const fs = require('fs')
-
-const Server = require('./express/server.js')
-const Client = require('./express/client.js')
-const DB = require('./db/db.js')
-const Peers = require('./peers/peers.js')
-
-const config = require('./data/config.json')
-const dbFile = require('./data/db.json')
-
-const options = {}
-const warnings = []
-
-let db, peers, server, client, myAddress
-
 module.exports = function(opts){
 
-  if(opts.host && opts.port){
-    config.host = opts.host
-    config.port = opts.port
-    fs.writeFileSync('./data/config.json', JSON.stringify(config), (error) => {
-      if(error){
-        console.log(error)
-        return false
-      }
-      return true
+  const eventEmitter = new (require('events').EventEmitter)
+  const fs = require('fs')
+
+  const config = require('./data/config.json')
+
+  const options = {
+    myAddress:opts.myAddress || false,
+    ws:opts.ws || false,
+    autoConnect:opts.autoConnect || false,
+    blacklist:opts.blacklist || false,
+    whitelist:opts.whitelist || false,
+    heartbeatInterval:opts.heartbeatInterval || (1000 * 60 * 60),
+    autoRemoveInterval:opts.autoRemoveInterval || (1000 * 60 * 120)
+  }
+
+  if(!options.myAddress) return console.log('options.myAddress not specified, is required.')
+  //if(!options.ws) console.log('Warning: options.ws not specified or false, switching to requests.')
+  //if(!options.autoConnect) console.log('Warning: options.autoConnect not specified or false, not autoConnecting to network. use connect(\'address\') or connectAll() to connect to (a) peer(s).')
+  if(options.blacklist && options.whitelist) return console.log('Cannot use both blacklist and whitelist, exiting.')
+  if(!options.blacklist) console.log('Warning: options.blacklist not specified or false, not using blacklist.')
+  if(!options.whitelist) console.log('Warning: options.whitelist not specified or false, not using whitelist.')
+  if(!options.heartbeatInterval) console.log('Warning: options.heartbeatInterval not specified or false, using default 1 hour interval.')
+  if(!options.autoRemoveInterval) console.log('Warning: options.autoRemoveInterval not specified or false, using default 10 hour interval.')
+  if(options.autoRemoveInterval < options.heartbeatInterval) console.log(`Warning: options.autoRemoveInterval is smaller than options.heartbeatInterval, all peers will be disconnected after options.autoRemoveInterval/${options.autoRemoveInterval} seconds.`)
+
+  const store = (name, data) => {
+    fs.writeFile(`./data/${name}.json`, JSON.stringify(data), err => {
+      if(err) return console.log('Error saving file', name, err)
+      return console.log(`File ${name} saved!`)
     })
   }
 
-  options.host = opts.host || config.host || 'localhost'
-  options.port = parseInt(opts.port) || config.port || 8080
-  options.myAddress = options.host + ':' + options.port
-  options.autoRemove = 3600000
+  let heartbeats = {}, peers = {}, server = {}, client = {}, blacklist = {}, whitelist = {}
 
-  myAddress = options.myAddress
+  peers = require('./lib/peers')(heartbeats, store)
+  heartbeats = require('./lib/heartbeats')(options, peers)
+  client = require('./lib/client')(options, peers, heartbeats)
+  server = require('./lib/server')(options, heartbeats, blacklist, whitelist)
+  blacklist = require('./lib/blacklist')(options, store)
+  whitelist = require('./lib/whitelist')(options, store)
 
-  db = new DB(dbFile)
-  peers = new Peers(db)
-  client = new Client(options, db, peers)
-  server = new Server(options, db, peers, client)
+  function setOptions(opts){
+    if(!opts.myAddress || opts.myAddress.split(':').length !== 2) return console.log('options.myAddres in format host:port is required.')
+
+    for(let option in opts) options[option] = opts[option]
+  }
+
+  peers.getAllPeers().forEach(peer => { if(peer !== options.myAddress) client.connect(peer) })
+  if(!peers.getPeer(options.myAddress)) peers.add(options.myAddress)
 
   return {
 
-    warnings:function(){
-      // return array with warnings
-      return warnings
-    },
+    setOptions:options => { return setOptions(options) },
+    getOptions:() => { return options },
 
-    options:{
-
-      get:function(property = null){
-        return options[property] || options
-      },
-
-      set:function(data){
-        for(let property in data) if(options.property) options.property = data.property
-        return true
-      }
-
-    },
-
-    peers:peers,
-
-    server:server,
-
+    heartbeats:heartbeats,
     client:client,
+    peers:peers,
+    blacklist:blacklist,
+    whitelist:whitelist,
 
-    myAddress:myAddress
+    events:eventEmitter
+
   }
 }

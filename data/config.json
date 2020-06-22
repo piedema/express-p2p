@@ -1,5 +1,3 @@
 {
-  "host":"xx.xxx.xx.xxx",
-  "port":12345,
   "autoRemoveInterval":60000
 }

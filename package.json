@@ -1,11 +1,17 @@
 {
-  "name": "express-p2p",
+  "name": "stream-p2p",
   "version": "1.0.0",
-  "description": "a nodejs p2p network using express",
+  "description": "A nodejs p2p network using express and got streams",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Peter Iedema",
-  "license": "ISC"
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "got": "^11.3.0",
+    "needle": "^2.5.0"
+  }
 }
