@@ -34,8 +34,8 @@ module.exports = function(opts){
 
   let heartbeats = {}, peers = {}, server = {}, client = {}, blacklist = {}, whitelist = {}
 
-  peers = require('./lib/peers')(heartbeats, store)
   heartbeats = require('./lib/heartbeats')(options, peers)
+  peers = require('./lib/peers')(options, heartbeats, store)
   client = require('./lib/client')(options, peers, heartbeats)
   server = require('./lib/server')(options, heartbeats, blacklist, whitelist)
   blacklist = require('./lib/blacklist')(options, store)
