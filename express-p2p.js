@@ -6,6 +6,7 @@ module.exports = function(opts){
   const config = require('./data/config.json')
 
   const options = {
+    myAddress:opts.myAddress || false,
     ws:opts.ws || false,
     autoConnect:opts.autoConnect || false,
     blacklist:opts.blacklist || false,
@@ -15,6 +16,7 @@ module.exports = function(opts){
     port:opts.port || config.port
   }
 
+  if(!options.myAddress) return console.log('You should specify your addres (ip+port) where you can ben contacted.')
   //if(!options.ws) console.log('Warning: options.ws not specified or false, switching to requests.')
   //if(!options.autoConnect) console.log('Warning: options.autoConnect not specified or false, not autoConnecting to network. use connect(\'address\') or connectAll() to connect to (a) peer(s).')
   if(options.blacklist && options.whitelist) return console.log('Cannot use both blacklist and whitelist, exiting.')
@@ -42,15 +44,11 @@ module.exports = function(opts){
 
   if(opts.peers) opts.peers.forEach(address => peers.add(address))
 
-  function setOptions(opts){
-    for(let option in opts) options[option] = opts[option]
-  }
-
   peers.getAllPeers().forEach(peer => client.connect(peer))
 
   return {
 
-    setOptions:options => { return setOptions(options) },
+    setOptions:opts => { for(let option in opts) options[option] = opts[option] },
     getOptions:() => { return options },
 
     heartbeats:heartbeats,

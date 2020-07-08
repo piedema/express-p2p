@@ -2,7 +2,9 @@ const ExpressP2P = require('./express-p2p.js')
 
 const options = {}
 
-const peers = process.argv[2]
+options.myAddress = process.argv[2]
+
+const peers = process.argv[3]
 if(peers) options.peers = peers.split()
 
 const ep2p = new ExpressP2P(options)
