@@ -1,5 +1,5 @@
 {
   "autoRemoveInterval":600000,
-  "heartbeatInterval":60000
+  "heartbeatInterval":60000,
   "port":31401
 }
