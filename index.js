@@ -1,8 +1,6 @@
 const ExpressP2P = require('./express-p2p.js')
 
 const options = {
-  myAddress:process.argv[2],
-  whitelist:false
 }
 
 const ep2p = new ExpressP2P(options)
